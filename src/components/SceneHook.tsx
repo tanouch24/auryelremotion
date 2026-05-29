@@ -11,7 +11,7 @@ export const SceneHook: React.FC<SceneHookProps> = ({hook, videoStyle}) => {
   const words = hook.split(' ');
 
   // Style C = bigger font for maximum impact
-  const fontSize = videoStyle === 2 ? 64 : 56;
+  const fontSize = videoStyle === 2 ? 100 : 88;
   // Style B = left-aligned confidence
   const isLeftAligned = videoStyle === 1;
 
@@ -61,7 +61,7 @@ export const SceneHook: React.FC<SceneHookProps> = ({hook, videoStyle}) => {
                 fontSize,
                 fontWeight: 'bold',
                 color: '#FFFFFF',
-                textShadow: '0 2px 28px rgba(0,0,0,0.95)',
+                textShadow: '0 4px 32px rgba(0,0,0,0.98)',
               }}
             >
               {word}

@@ -64,83 +64,34 @@ function colorStr(c: {r: number; g: number; b: number; a: number}, alphaOverride
   return `rgba(${c.r},${c.g},${c.b},${alphaOverride ?? c.a})`;
 }
 
-// ─── Effect 0 — Dirty stabilo (multi-layer SVG + displacement filter) ─────
+// ─── Effect 0 — Stabilo (backgroundColor sur le span — toujours visible) ─
+// Note: pas de SVG ni z-index. Le background d'un span est TOUJOURS derrière
+// son propre texte en CSS. Box-shadows simulent les saignées du marqueur.
 
-const DirtyStabilo: React.FC<{progress: number; seed: number; videoStyle: 0 | 1 | 2}> = ({progress, seed, videoStyle}) => {
+function staliboSpanStyle(progress: number, seed: number, videoStyle: 0 | 1 | 2): React.CSSProperties {
   const c = pickColor(seed, videoStyle);
-  const filterId = `stbl-${seed}`;
-
-  // 3 overlapping strokes with different y, length, opacity → marker feel
-  const y1 = 17 + (seed % 4);          // main stroke y (17–20)
-  const y2 = 10 + (seed % 5);          // top bleed (10–14)
-  const y3 = 26 + (seed % 3);          // bottom bleed (26–28)
-
-  const w1 = 200 * Math.min(1, progress * 1.04);
-  const w2 = 190 * Math.min(1, progress * 0.93);
-  const w3 = 205 * Math.min(1, progress * 1.10);
-
-  return (
-    <svg
-      style={{
-        position: 'absolute',
-        top: '-12%',
-        left: '-3px',
-        width: 'calc(100% + 6px)',
-        height: '128%',
-        zIndex: -1,
-        overflow: 'visible',
-        pointerEvents: 'none',
-      }}
-      viewBox="0 0 200 40"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <filter id={filterId} x="-8%" y="-40%" width="116%" height="180%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.05 0.10"
-            numOctaves="2"
-            seed={seed}
-            result="noise"
-          />
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="noise"
-            scale="2.2"
-            xChannelSelector="R"
-            yChannelSelector="G"
-          />
-        </filter>
-      </defs>
-      <g filter={`url(#${filterId})`}>
-        {/* Main thick stroke */}
-        <line
-          x1={0} y1={y1}
-          x2={w1} y2={y1 + (seed % 3) * 0.4 - 0.4}
-          stroke={colorStr(c)}
-          strokeWidth={20}
-          strokeLinecap="round"
-        />
-        {/* Top bleed — lighter */}
-        <line
-          x1={2} y1={y2}
-          x2={w2} y2={y2 + (seed % 2) * 0.6}
-          stroke={colorStr(c, c.a * 0.55)}
-          strokeWidth={11}
-          strokeLinecap="round"
-        />
-        {/* Bottom bleed — lightest */}
-        <line
-          x1={0} y1={y3}
-          x2={w3} y2={y3 - (seed % 2) * 0.5}
-          stroke={colorStr(c, c.a * 0.38)}
-          strokeWidth={7}
-          strokeLinecap="round"
-        />
-      </g>
-    </svg>
-  );
-};
+  const rotations = [-0.9, 0.7, -1.2, 1.0, -0.5, 0.8, -0.3, 1.1];
+  const rot = rotations[seed % rotations.length];
+  const bleedA = c.a * 0.55 * progress;
+  const bleedB = c.a * 0.40 * progress;
+  const bleedC = c.a * 0.30 * progress;
+  const ox1 = 2 + (seed % 3); // 2-4px bleed right
+  const ox2 = -(1 + seed % 2); // -1/-2px bleed left
+  const oy3 = 2 + (seed % 3); // 2-4px bleed bottom
+  return {
+    backgroundColor: colorStr(c, c.a * progress),
+    boxShadow: [
+      `${ox1}px 1px 0 ${colorStr(c, bleedA)}`,
+      `${ox2}px -1px 0 ${colorStr(c, bleedB)}`,
+      `0px ${oy3}px 0 ${colorStr(c, bleedC)}`,
+      `0px -1px 0 ${colorStr(c, bleedC * 0.7)}`,
+    ].join(', '),
+    padding: '3px 6px',
+    borderRadius: 3,
+    transform: `rotate(${rot}deg)`,
+    display: 'inline-block',
+  };
+}
 
 // ─── Effect 1 — Underline feutre ──────────────────────────────────────────
 
@@ -148,17 +99,17 @@ const UnderlineEffect: React.FC<{progress: number; seed: number; videoStyle: 0 |
   const DASH = 108;
   const dashOffset = DASH * (1 - progress);
   const c = pickColor(seed, videoStyle);
-  const mid = 4 + (seed % 3);
+  const mid = 8 + (seed % 4); // 8-11 in 0-18 viewBox
   return (
     <svg
-      style={{position: 'absolute', bottom: -6, left: 0, width: '100%', height: 10, overflow: 'visible', pointerEvents: 'none'}}
-      viewBox="0 0 100 10"
+      style={{position: 'absolute', bottom: -12, left: 0, width: '100%', height: 18, overflow: 'visible', pointerEvents: 'none'}}
+      viewBox="0 0 100 18"
       preserveAspectRatio="none"
     >
       <path
-        d={`M 0 ${mid} Q 28 ${mid + 2} 58 ${mid} Q 80 ${mid - 1} 100 ${mid + 1}`}
-        stroke={colorStr(c, 0.92)}
-        strokeWidth={1.8}
+        d={`M 0 ${mid} Q 28 ${mid + 3} 58 ${mid} Q 80 ${mid - 2} 100 ${mid + 1}`}
+        stroke={colorStr(c, 0.95)}
+        strokeWidth={4}
         fill="none"
         strokeDasharray={DASH}
         strokeDashoffset={dashOffset}
@@ -174,14 +125,14 @@ const EncadrementEffect: React.FC<{progress: number; seed: number}> = ({progress
   const PERIMETER = 244;
   return (
     <svg
-      style={{position: 'absolute', top: -4, left: -7, width: 'calc(100% + 14px)', height: 'calc(100% + 10px)', overflow: 'visible', pointerEvents: 'none'}}
+      style={{position: 'absolute', top: -6, left: -8, width: 'calc(100% + 16px)', height: 'calc(100% + 14px)', overflow: 'visible', pointerEvents: 'none'}}
       viewBox="0 0 100 26"
       preserveAspectRatio="none"
     >
       <rect
         x={1} y={1} width={98} height={24} rx={2}
-        stroke="rgba(255,255,255,0.60)"
-        strokeWidth={1.4}
+        stroke="rgba(255,255,255,0.80)"
+        strokeWidth={2.5}
         fill="none"
         strokeDasharray={PERIMETER}
         strokeDashoffset={PERIMETER * (1 - progress)}
@@ -198,16 +149,16 @@ const DoubleUnderlineEffect: React.FC<{progress: number; seed: number; videoStyl
   const p2 = Math.max(0, progress * 1.7 - 0.7);
   const c = pickColor(seed, videoStyle);
   // Style C: thicker, more aggressive lines
-  const w1 = videoStyle === 2 ? 2.2 : 1.4;
-  const w2 = videoStyle === 2 ? 1.4 : 1.0;
+  const w1 = videoStyle === 2 ? 5 : 3.5;
+  const w2 = videoStyle === 2 ? 3 : 2;
   return (
     <svg
-      style={{position: 'absolute', bottom: -8, left: 0, width: '100%', height: 14, overflow: 'visible', pointerEvents: 'none'}}
-      viewBox="0 0 100 14"
+      style={{position: 'absolute', bottom: -14, left: 0, width: '100%', height: 20, overflow: 'visible', pointerEvents: 'none'}}
+      viewBox="0 0 100 20"
       preserveAspectRatio="none"
     >
-      <line x1={0} y1={3} x2={100} y2={3} stroke={colorStr(c, 0.9)} strokeWidth={w1} strokeDasharray={100} strokeDashoffset={100 * (1 - p1)} />
-      <line x1={0} y1={9} x2={100} y2={9} stroke={colorStr(c, 0.55)} strokeWidth={w2} strokeDasharray={100} strokeDashoffset={100 * (1 - p2)} />
+      <line x1={0} y1={5} x2={100} y2={5} stroke={colorStr(c, 0.95)} strokeWidth={w1} strokeDasharray={100} strokeDashoffset={100 * (1 - p1)} />
+      <line x1={0} y1={13} x2={100} y2={13} stroke={colorStr(c, 0.65)} strokeWidth={w2} strokeDasharray={100} strokeDashoffset={100 * (1 - p2)} />
     </svg>
   );
 };
@@ -223,20 +174,27 @@ interface EmotionalWordProps {
 }
 
 export const EmotionalWord: React.FC<EmotionalWordProps> = ({word, effectType, progress, seed, videoStyle}) => {
-  // Micro shake: oscillates during draw phase, settles at progress=1
+  // Micro shake: oscillates while drawing, settles cleanly at progress=1
   const shakeX = progress < 1
-    ? Math.sin(progress * 10 * Math.PI) * 2.2 * Math.sin(progress * Math.PI)
+    ? Math.sin(progress * 10 * Math.PI) * 2.5 * Math.sin(progress * Math.PI)
     : 0;
 
-  const baseStyle: React.CSSProperties = {
-    position: 'relative',
-    display: 'inline-block',
-    transform: `translateX(${shakeX}px)`,
-  };
+  // Effect 0: stabilo via backgroundColor (TOUJOURS visible — background du span = toujours derrière son texte)
+  const isStabilo = effectType === 0;
+  const spanStyle: React.CSSProperties = isStabilo
+    ? {
+        ...staliboSpanStyle(progress, seed, videoStyle),
+        position: 'relative',
+        transform: `${staliboSpanStyle(progress, seed, videoStyle).transform as string} translateX(${shakeX}px)`,
+      }
+    : {
+        position: 'relative',
+        display: 'inline-block',
+        transform: `translateX(${shakeX}px)`,
+      };
 
   return (
-    <span style={baseStyle}>
-      {effectType === 0 && <DirtyStabilo progress={progress} seed={seed} videoStyle={videoStyle} />}
+    <span style={spanStyle}>
       {word}
       {effectType === 1 && <UnderlineEffect progress={progress} seed={seed} videoStyle={videoStyle} />}
       {effectType === 2 && <EncadrementEffect progress={progress} seed={seed} />}

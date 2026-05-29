@@ -57,11 +57,13 @@ export const SceneCTA: React.FC<SceneCTAProps> = ({cta, videoStyle: _videoStyle}
       <div
         style={{
           fontFamily: '"Cinzel", Georgia, serif',
-          fontSize: 32,
+          fontSize: 48,
+          fontWeight: 'bold',
           color: '#FFFFFF',
           textAlign: 'center',
-          letterSpacing: '0.05em',
-          textShadow: '0 2px 15px rgba(0,0,0,0.9)',
+          letterSpacing: '0.04em',
+          lineHeight: 1.25,
+          textShadow: '0 0 40px rgba(212,175,55,0.5), 0 4px 20px rgba(0,0,0,0.98)',
           padding: '0 60px',
         }}
       >

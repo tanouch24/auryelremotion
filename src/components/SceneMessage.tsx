@@ -119,10 +119,10 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message, videoStyle})
                 transform: `translateY(${translateY}px)`,
                 fontFamily: '"Lora", Georgia, serif',
                 fontStyle: 'italic',
-                fontSize: 46,
+                fontSize: 64,
                 color: '#FFFFFF',
-                lineHeight: 1.35,
-                textShadow: '0 2px 20px rgba(0,0,0,0.95)',
+                lineHeight: 1.3,
+                textShadow: '0 4px 24px rgba(0,0,0,0.98)',
               }}
             >
               <div
@@ -146,7 +146,7 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message, videoStyle})
                         style={{
                           position: 'relative',
                           display: 'inline-block',
-                          fontSize: 80,
+                          fontSize: 96,
                           fontWeight: 'bold',
                           fontStyle: 'normal',
                           color: '#D4AF37',

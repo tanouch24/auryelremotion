@@ -13,9 +13,9 @@ export const RemotionRoot = () => {
         width={1080}
         height={1920}
         defaultProps={{
-          hook: 'Tu sais déjà la vérité.',
-          message: 'Il y a des silences qui parlent plus fort que les mots. Tu le ressens. Tu sais ce que ça veut dire. Arrête d\'attendre une confirmation que tu as déjà.',
-          cta: 'Découvre ton message',
+          hook: 'Il est revenu après 8 mois.',
+          message: 'Tu avais tout effacé.\nIl est revenu quand même.\nTu ne sais plus quoi faire.',
+          cta: 'Découvre ce qu\'il ressent encore.',
         }}
       />
     </>
