@@ -3,9 +3,10 @@ import {AbsoluteFill, useCurrentFrame, interpolate} from 'remotion';
 
 interface SceneCTAProps {
   cta: string;
+  videoStyle: 0 | 1 | 2;
 }
 
-export const SceneCTA: React.FC<SceneCTAProps> = ({cta}) => {
+export const SceneCTA: React.FC<SceneCTAProps> = ({cta, videoStyle: _videoStyle}) => {
   const frame = useCurrentFrame();
   const relativeFrame = frame - 270;
 
@@ -24,7 +25,9 @@ export const SceneCTA: React.FC<SceneCTAProps> = ({cta}) => {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        // Push block into 40-58% — above TikTok's bottom UI zone (starts ~75%)
+        justifyContent: 'flex-start',
+        paddingTop: '37%',
       }}
     >
       {/* Diamond */}
@@ -65,15 +68,15 @@ export const SceneCTA: React.FC<SceneCTAProps> = ({cta}) => {
         {cta}
       </div>
 
-      {/* Bottom Auryel text */}
+      {/* Auryel signature — inline flow, safely above bottom UI zone */}
       <div
         style={{
-          position: 'absolute',
-          bottom: 80,
+          marginTop: 48,
           fontFamily: '"Cinzel", Georgia, serif',
           fontSize: 12,
           color: '#D4AF37',
           letterSpacing: '0.4em',
+          opacity: 0.8,
         }}
       >
         Auryel
