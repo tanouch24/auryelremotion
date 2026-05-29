@@ -4,12 +4,15 @@ import {AbsoluteFill, useCurrentFrame, Img, staticFile, interpolate} from 'remot
 export const CharacterLayer: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Breathing animation (cycle: 90 frames)
-  const breathScale = 1 + 0.004 * Math.sin((frame / 90) * Math.PI * 2);
+  // Slow cinematic zoom: 1.00 → 1.06 over full 360 frames
+  const zoomScale = 1 + 0.06 * (frame / 360);
 
-  // Camera drift (cycle: 200 frames)
-  const driftX = 3 * Math.sin((frame / 200) * Math.PI * 2);
-  const driftY = 2 * Math.sin((frame / 200) * Math.PI * 2 + 1); // phase offset
+  // Breathing animation (cycle: 90 frames) — combined with zoom
+  const breathScale = zoomScale * (1 + 0.004 * Math.sin((frame / 90) * Math.PI * 2));
+
+  // Camera drift (cycle: 200 frames) — slightly more pronounced for cinema feel
+  const driftX = 4 * Math.sin((frame / 200) * Math.PI * 2);
+  const driftY = 2.5 * Math.sin((frame / 200) * Math.PI * 2 + 1);
 
   // Eye blink: every 120 frames, blink for 4 frames
   const frameInCycle = frame % 120;
@@ -27,7 +30,7 @@ export const CharacterLayer: React.FC = () => {
       <AbsoluteFill
         style={{
           transform: `scale(${breathScale}) translate(${driftX}px, ${driftY}px)`,
-          transformOrigin: 'center center',
+          transformOrigin: 'center 30%',
         }}
       >
         <Img

@@ -9,19 +9,16 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
   const frame = useCurrentFrame();
   const relativeFrame = frame - 90;
 
-  // Split message into lines (roughly 35 chars per line)
-  const lines: string[] = [];
-  const words = message.split(' ');
-  let currentLine = '';
-  for (const word of words) {
-    if ((currentLine + ' ' + word).trim().length > 35 && currentLine.length > 0) {
-      lines.push(currentLine.trim());
-      currentLine = word;
-    } else {
-      currentLine = currentLine ? currentLine + ' ' + word : word;
-    }
-  }
-  if (currentLine) lines.push(currentLine.trim());
+  // Split by \n — Claude generates short phrases separated by \n
+  const lines = message
+    .split(/\\n|\n/)
+    .map(l => l.trim())
+    .filter(Boolean)
+    .slice(0, 3); // hard cap at 3 phrases
+
+  // Each phrase gets 40 frames to appear, staggered by 35 frames
+  const STAGGER = 35;
+  const FADE_IN = 18;
 
   return (
     <AbsoluteFill
@@ -30,7 +27,7 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 60px',
+        padding: '0 80px',
       }}
     >
       {/* AURYEL logo */}
@@ -51,15 +48,15 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
         AURYEL
       </div>
 
-      {/* Message lines */}
-      <div style={{textAlign: 'center'}}>
+      {/* Message phrases — one short phrase per line, big font, breathing */}
+      <div style={{textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 40}}>
         {lines.map((line, i) => {
-          const lineStart = i * 20;
-          const opacity = interpolate(relativeFrame, [lineStart, lineStart + 15], [0, 1], {
+          const lineStart = i * STAGGER;
+          const opacity = interpolate(relativeFrame, [lineStart, lineStart + FADE_IN], [0, 1], {
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
           });
-          const translateY = interpolate(relativeFrame, [lineStart, lineStart + 15], [10, 0], {
+          const translateY = interpolate(relativeFrame, [lineStart, lineStart + FADE_IN], [16, 0], {
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
           });
@@ -71,11 +68,10 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
                 transform: `translateY(${translateY}px)`,
                 fontFamily: '"Lora", Georgia, serif',
                 fontStyle: 'italic',
-                fontSize: 38,
+                fontSize: 46,
                 color: '#FFFFFF',
-                lineHeight: 1.5,
-                textShadow: '0 2px 15px rgba(0,0,0,0.9)',
-                marginBottom: 8,
+                lineHeight: 1.35,
+                textShadow: '0 2px 20px rgba(0,0,0,0.95)',
               }}
             >
               {line}
