@@ -1,8 +1,28 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame, interpolate} from 'remotion';
+import {EMOTIONAL_WORDS, getEffectType, EmotionalWord} from './EmotionalHighlight';
 
 interface SceneMessageProps {
   message: string;
+}
+
+// Precompute which words get highlighted (max 2 per line, deterministic)
+function buildWordGroups(lines: string[]) {
+  return lines.map((line, lineIdx) => {
+    const words = line.split(' ');
+    let count = 0;
+    return words.map((word, wordIdx) => {
+      const clean = word.toLowerCase().replace(/[^a-zàâçéèêëîïôùûüÿæœ]/g, '');
+      const highlight = EMOTIONAL_WORDS.has(clean) && count < 2;
+      if (highlight) count++;
+      return {
+        word,
+        highlight,
+        effectType: getEffectType(clean, lineIdx, wordIdx),
+        seed: lineIdx * 10 + wordIdx,
+      };
+    });
+  });
 }
 
 export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
@@ -14,11 +34,15 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
     .split(/\\n|\n/)
     .map(l => l.trim())
     .filter(Boolean)
-    .slice(0, 3); // hard cap at 3 phrases
+    .slice(0, 3);
 
-  // Each phrase gets 40 frames to appear, staggered by 35 frames
   const STAGGER = 35;
   const FADE_IN = 18;
+  // Highlight starts 12 frames after line appears, draws over 9 frames (~300ms)
+  const EFFECT_DELAY = 12;
+  const EFFECT_DURATION = 9;
+
+  const wordGroups = buildWordGroups(lines);
 
   return (
     <AbsoluteFill
@@ -48,10 +72,10 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
         AURYEL
       </div>
 
-      {/* Message phrases — one short phrase per line, big font, breathing */}
+      {/* Message phrases */}
       <div style={{textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 40}}>
-        {lines.map((line, i) => {
-          const lineStart = i * STAGGER;
+        {lines.map((_, lineIdx) => {
+          const lineStart = lineIdx * STAGGER;
           const opacity = interpolate(relativeFrame, [lineStart, lineStart + FADE_IN], [0, 1], {
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
@@ -60,9 +84,11 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
           });
+          const effectStart = lineStart + EFFECT_DELAY;
+
           return (
             <div
-              key={i}
+              key={lineIdx}
               style={{
                 opacity,
                 transform: `translateY(${translateY}px)`,
@@ -74,7 +100,25 @@ export const SceneMessage: React.FC<SceneMessageProps> = ({message}) => {
                 textShadow: '0 2px 20px rgba(0,0,0,0.95)',
               }}
             >
-              {line}
+              <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0 0.28em', alignItems: 'baseline'}}>
+                {wordGroups[lineIdx].map(({word, highlight, effectType, seed}, wordIdx) => {
+                  if (!highlight) {
+                    return <span key={wordIdx}>{word}</span>;
+                  }
+                  const progress = Math.max(0, Math.min(1,
+                    (relativeFrame - effectStart) / EFFECT_DURATION
+                  ));
+                  return (
+                    <EmotionalWord
+                      key={wordIdx}
+                      word={word}
+                      effectType={effectType as 0 | 1 | 2 | 3}
+                      progress={progress}
+                      seed={seed}
+                    />
+                  );
+                })}
+              </div>
             </div>
           );
         })}
