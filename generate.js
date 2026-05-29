@@ -15,6 +15,38 @@ function today() {
   return new Date().toISOString().split('T')[0];
 }
 
+function formatDate() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${dd}-${mm}-${yy}`;
+}
+
+function getSlot() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'MATIN';
+  if (h >= 12 && h < 18) return 'MIDI';
+  return 'SOIR';
+}
+
+// Résout les conflits si plusieurs vidéos dans le même créneau
+function resolveOutputPaths(outputRoot) {
+  const date = formatDate();
+  const slot = getSlot();
+  let base = `${date}_${slot}`;
+  let videoPath = path.join(outputRoot, `${base}.mp4`);
+  let jsonPath  = path.join(outputRoot, `${base}.json`);
+  let i = 2;
+  while (fs.existsSync(videoPath)) {
+    base = `${date}_${slot}_${i}`;
+    videoPath = path.join(outputRoot, `${base}.mp4`);
+    jsonPath  = path.join(outputRoot, `${base}.json`);
+    i++;
+  }
+  return {videoPath, jsonPath, label: base};
+}
+
 function loadJson(filePath, defaultValue) {
   try {
     if (!fs.existsSync(filePath)) return defaultValue;
@@ -218,23 +250,23 @@ async function main() {
   console.log(`   CTA     : ${content.cta}`);
 
   // Save content and update history
-  const outputDir = path.join(__dirname, 'output', today());
-  fs.mkdirSync(outputDir, { recursive: true });
+  const outputRoot = path.join(__dirname, 'output');
+  fs.mkdirSync(outputRoot, { recursive: true });
 
-  const contentPath = path.join(outputDir, 'content.json');
+  const {videoPath: outputPath, jsonPath: contentPath, label} = resolveOutputPaths(outputRoot);
   saveJson(contentPath, content);
 
   updateHistory(hooksPath, content.hook);
   updateHistory(topicsPath, content.message);
   updateWordCount(content.hook + ' ' + content.message);
 
-  console.log(`\n💾 content.json → ${contentPath}`);
+  console.log(`\n💾 content → ${contentPath}`);
+  console.log(`🎬 Créneau : ${label}`);
 
   // ─── Remotion render ────────────────────────────────────────────────────
   console.log('\n🎥 Lancement du rendu Remotion...');
 
   const entryPoint = path.join(__dirname, 'src', 'index.ts');
-  const outputPath = path.join(outputDir, 'video.mp4');
 
   console.log('   Bundling...');
   const bundled = await bundle({
